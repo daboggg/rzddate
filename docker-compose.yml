@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  daboggg_bot:
+    container_name: rzddate
+    build: .
+    command: >
+      sh -c 'python main.py'
