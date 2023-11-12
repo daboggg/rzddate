@@ -7,3 +7,5 @@ services:
     command: >
       sh -c 'python main.py'
     restart: always
+    volumes:
+      - /home/daboggg/rzddate/rzddate.db:/usr/src/rzddate/rzddate.db
