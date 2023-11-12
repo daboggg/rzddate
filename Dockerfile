@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED 1
 
 # install psycopg2 dependencies
 RUN apk update \
-    && apk add gcc python3-dev musl-dev mariadb-dev
+    && apk add gcc python3-dev musl-dev mariadb-dev backports.zoneinfo
 
 # install dependencies
 RUN pip install --upgrade pip
