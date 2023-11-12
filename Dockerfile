@@ -8,6 +8,10 @@ WORKDIR /usr/src/rzddate
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# install psycopg2 dependencies
+RUN apk update \
+    && apk add gcc python3-dev musl-dev mariadb-dev
+
 # install dependencies
 RUN pip install --upgrade pip
 ADD ./requirements.txt .
