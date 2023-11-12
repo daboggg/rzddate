@@ -143,15 +143,14 @@ async def cb_confirm(call: CallbackQuery, bot: Bot, state: FSMContext, apschedul
 
         apscheduler.add_job(send_reminder, trigger=trigg_name,
                             id=id,
-                            run_date=datetime.now() + timedelta(minutes=1),
-                            # run_date=datetime(
-                            #     dop.year,
-                            #     dop.month,
-                            #     dop.day,
-                            #     7,
-                            #     50,
-                            #     0
-                            # ),
+                            run_date=datetime(
+                                dop.year,
+                                dop.month,
+                                dop.day,
+                                7,
+                                50,
+                                0
+                            ),
                             kwargs={'bot': bot, 'chat_id': chat_id,
                                     'text': f'Вы просили напомнить о покупке билета на {date_of_trip}'})
         logger.info(f'Задание добавлено в шедулер с id: {id}')

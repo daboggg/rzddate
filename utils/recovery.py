@@ -21,8 +21,7 @@ async def add_tasks_to_scheduler(scheduler: AsyncIOScheduler, bot: Bot) -> None:
                 scheduler.add_job(send_reminder,
                                   trigger=task[1],
                                   id=task[0],
-                                  # run_date=datetime(rd.year, rd.month, rd.day, 7, 50, 0),
-                                  run_date=datetime.now() + timedelta(minutes=1),
+                                  run_date=datetime(rd.year, rd.month, rd.day, 7, 50, 0),
                                   kwargs={'bot': bot,
                                           'chat_id': task[2],
                                           'text': f'Вы просили напомнить о покупке билета на {task[4]}'
