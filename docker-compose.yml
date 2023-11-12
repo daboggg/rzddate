@@ -6,3 +6,4 @@ services:
     build: .
     command: >
       sh -c 'python main.py'
+    restart: always
