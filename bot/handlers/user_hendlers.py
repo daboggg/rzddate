@@ -6,6 +6,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery, Message
+from aiogram.utils.formatting import as_marked_list, as_list
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from babel.dates import format_date
 
@@ -28,8 +29,8 @@ class CalcDate(StatesGroup):
 
 @user_handlers_router.message(Command(commands=['start']))
 async def cmd_start(message: types.Message, state: FSMContext):
-    reply_text1 = 'Привет, это бот для определения даты покупки билетов за 45, 60 или 90 дней.'
-    reply_text2 = 'Выбери год'
+    reply_text1 = '🚂 Привет, это бот для определения даты покупки билетов за 45, 60 или 90 дней.'
+    reply_text2 = '⁉️Выбери год'
 
     await message.answer(text=reply_text1)
     await message.answer(text=reply_text2, reply_markup=get_years_kb())
@@ -62,10 +63,18 @@ async def back(call: CallbackQuery, state: FSMContext):
 async def cb_year(call: CallbackQuery, state: FSMContext):
     if call.data != 'back': await state.update_data(year=call.data)
     state_data = await state.get_data()
-    reply_text = f'Выбран год: {state_data["year"]}\n'
-    reply_text += 'Выбери месяц'
+    content = as_list(
+        as_marked_list(
+            f'Выбран год: {state_data["year"]}',
+            marker="✅ ",
+        ),
+        as_marked_list(
+            'Выбери месяц',
+            marker="⁉️ ",
+        ),
+    )
     logger.info(f'Выбран год: {state_data.get("year")}')
-    await call.message.answer(text=reply_text, reply_markup=get_month_kb())
+    await call.message.answer(**content.as_kwargs(), reply_markup=get_month_kb())
     await call.answer()
     await state.set_state(CalcDate.year_selected)
 
@@ -74,11 +83,19 @@ async def cb_year(call: CallbackQuery, state: FSMContext):
 async def cb_month(call: CallbackQuery, state: FSMContext):
     if call.data != 'back': await state.update_data(month=call.data)
     state_data = await state.get_data()
-    reply_text = f'Выбран год: {state_data["year"]}\n'
-    reply_text += f'Выбран месяц: {months[int(state_data["month"]) - 1]}\n'
-    reply_text += 'Выбери день'
+    content = as_list(
+        as_marked_list(
+            f'Выбран год: {state_data["year"]}',
+            f'Выбран месяц: {months[int(state_data["month"]) - 1]}',
+            marker="✅ ",
+        ),
+        as_marked_list(
+            'Выбери день',
+            marker="⁉️ ",
+        ),
+    )
     logger.info(f'Выбран месяц: {state_data.get("month")}')
-    await call.message.answer(text=reply_text, reply_markup=get_day_kb(state_data))
+    await call.message.answer(**content.as_kwargs(), reply_markup=get_day_kb(state_data))
     await call.answer()
     await state.set_state(CalcDate.month_selected)
 
@@ -87,12 +104,20 @@ async def cb_month(call: CallbackQuery, state: FSMContext):
 async def cb_day(call: CallbackQuery, state: FSMContext):
     if call.data != 'back': await state.update_data(day=call.data)
     state_data = await state.get_data()
-    reply_text = f'Выбран год: {state_data["year"]}\n'
-    reply_text += f'Выбран месяц: {months[int(state_data["month"]) - 1]}\n'
-    reply_text += f'Выбран день: {state_data["day"]}\n'
-    reply_text += 'Выбери период'
+    content = as_list(
+        as_marked_list(
+            f'Выбран год: {state_data["year"]}',
+            f'Выбран месяц: {months[int(state_data["month"]) - 1]}',
+            f'Выбран день: {state_data["day"]}',
+            marker="✅ ",
+        ),
+        as_marked_list(
+            'Выбери период',
+            marker="⁉️ ",
+        ),
+    )
     logger.info(f'Выбран день: {state_data.get("day")}')
-    await call.message.answer(text=reply_text, reply_markup=get_period_kb())
+    await call.message.answer(**content.as_kwargs(), reply_markup=get_period_kb())
     await call.answer()
     await state.set_state(CalcDate.day_selected)
 
@@ -107,7 +132,7 @@ async def cb_period(call: CallbackQuery, state: FSMContext):
     await state.update_data(date_of_purchase=date_of_purchase)
     date_of_purchase_str = format_date(date_of_purchase, locale='ru', format='dd MMMM YYYY')
     d = format_date(d, locale='ru', format='dd MMMM YYYY')
-    reply_text = f'Продажа на {d} открывается {date_of_purchase_str} ' \
+    reply_text = f'📅 Продажа на {d} открывается {date_of_purchase_str} ' \
                  f'(за {state_data["period"]} дней)'
 
     logger.info(f'Выбран период: {state_data.get("period")}')
@@ -115,7 +140,7 @@ async def cb_period(call: CallbackQuery, state: FSMContext):
 
     # если вычисленная дата больше чем текущая, предложение о напоминании не выводим
     if date.today() < date_of_purchase:
-        await call.message.answer("Хотите чтобы я напомнил?", reply_markup=confirm_kb())
+        await call.message.answer("💡 Хотите чтобы я напомнил?", reply_markup=confirm_kb())
         await state.set_state(CalcDate.text_remind)
     else:
         await state.clear()
@@ -126,11 +151,11 @@ async def cb_period(call: CallbackQuery, state: FSMContext):
 @user_handlers_router.callback_query(CalcDate.text_remind)
 async def cb_enter_text_or_cancel(call: CallbackQuery, state: FSMContext):
     if call.data == 'confirm':
-        await call.message.answer('Введите текст напоминания...')
+        await call.message.answer('✏️ Введите текст напоминания...')
         await call.answer()
         await state.set_state(CalcDate.confirm)
     else:
-        await call.message.answer('Чтобы начать сначала, нажмите /start в меню')
+        await call.message.answer('🆕 Чтобы начать сначала, нажмите /start в меню')
         await call.answer()
         await state.clear()
 
@@ -161,9 +186,9 @@ async def cb_confirm(message: Message, bot: Bot, state: FSMContext, apscheduler:
                             0
                         ),
                         kwargs={'bot': bot, 'chat_id': chat_id,
-                                'text': f'Вы просили напомнить о покупке билета на {date_of_trip}{text}'})
+                                'text': f'⚠️ Вы просили напомнить о покупке билета на {date_of_trip}{text}'})
     logger.info(f'Задание добавлено в шедулер с id: {id}')
-    await message.answer(f'Вы получите напоминание: {dop}, в 07:50')
+    await message.answer(f'✔️Вы получите напоминание: {dop}, в 07:50')
     await state.clear()
 
 

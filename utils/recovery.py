@@ -26,7 +26,7 @@ async def add_tasks_to_scheduler(scheduler: AsyncIOScheduler, bot: Bot) -> None:
                                   # run_date=datetime.now()+ timedelta(minutes=1),
                                   kwargs={'bot': bot,
                                           'chat_id': task[2],
-                                          'text': f'Вы просили напомнить о покупке билета на {task[4]}{text}'
+                                          'text': f'⚠️ Вы просили напомнить о покупке билета на {task[4]}{text}'
                                           }
                                   )
                 logger.info(f'Задание добавлено в шедулер с id: {task[0]}')

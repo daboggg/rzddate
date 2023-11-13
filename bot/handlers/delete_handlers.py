@@ -22,9 +22,9 @@ async def offer_delete_task(message: Message, apscheduler: AsyncIOScheduler) -> 
     }, f)
     info = list(m)
     if len(info):
-        await message.answer('Нажмите для удаления', reply_markup=delete_task_kb(info))
+        await message.answer('👇 Нажмите для удаления', reply_markup=delete_task_kb(info))
     else:
-        await message.answer('Список заданий пуст')
+        await message.answer('⛔ Напоминаний нет')
 
 
 # удаляет задания
@@ -32,5 +32,5 @@ async def offer_delete_task(message: Message, apscheduler: AsyncIOScheduler) -> 
 async def delete_task(callback: CallbackQuery, apscheduler: AsyncIOScheduler) -> None:
     apscheduler.remove_job(callback.data.split("_")[1])
     logger.info(f'задание с id {callback.data.split("_")[1]} удалено из шедулера')
-    await callback.message.answer('Удалено')
+    await callback.message.answer('❌ Удалено')
     await callback.answer()
