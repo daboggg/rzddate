@@ -5,7 +5,7 @@ from aiogram import types, Router, F, Bot
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from babel.dates import format_date
 
@@ -13,7 +13,7 @@ from bot.keyboards.user_keyboards import get_years_kb, get_month_kb, get_day_kb,
 from utils.dbconnect import add_task
 from utils.months import months
 
-router = Router()
+user_handlers_router = Router()
 logger = logging.getLogger('bot.user_handlers')
 
 
@@ -22,10 +22,11 @@ class CalcDate(StatesGroup):
     year_selected = State()
     month_selected = State()
     day_selected = State()
+    text_remind = State()
     confirm = State()
 
 
-@router.message(Command(commands=['start']))
+@user_handlers_router.message(Command(commands=['start']))
 async def cmd_start(message: types.Message, state: FSMContext):
     reply_text1 = 'Привет, это бот для определения даты покупки билетов за 45, 60 или 90 дней.'
     reply_text2 = 'Выбери год'
@@ -35,12 +36,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await state.set_state(CalcDate.start_calculation)
 
 
-@router.message()
-async def msg_err(message: types.Message):
-    await message.answer('пользуйтесь меню')
-
-
-@router.callback_query(F.data == 'back', )
+@user_handlers_router.callback_query(F.data == 'back', )
 async def back(call: CallbackQuery, state: FSMContext):
     previous_state = ''
     current_state = str(await state.get_state())
@@ -62,7 +58,7 @@ async def back(call: CallbackQuery, state: FSMContext):
     await state.set_state(previous_state)
 
 
-@router.callback_query(CalcDate.start_calculation)
+@user_handlers_router.callback_query(CalcDate.start_calculation)
 async def cb_year(call: CallbackQuery, state: FSMContext):
     if call.data != 'back': await state.update_data(year=call.data)
     state_data = await state.get_data()
@@ -74,7 +70,7 @@ async def cb_year(call: CallbackQuery, state: FSMContext):
     await state.set_state(CalcDate.year_selected)
 
 
-@router.callback_query(CalcDate.year_selected)
+@user_handlers_router.callback_query(CalcDate.year_selected)
 async def cb_month(call: CallbackQuery, state: FSMContext):
     if call.data != 'back': await state.update_data(month=call.data)
     state_data = await state.get_data()
@@ -87,7 +83,7 @@ async def cb_month(call: CallbackQuery, state: FSMContext):
     await state.set_state(CalcDate.month_selected)
 
 
-@router.callback_query(CalcDate.month_selected)
+@user_handlers_router.callback_query(CalcDate.month_selected)
 async def cb_day(call: CallbackQuery, state: FSMContext):
     if call.data != 'back': await state.update_data(day=call.data)
     state_data = await state.get_data()
@@ -101,7 +97,7 @@ async def cb_day(call: CallbackQuery, state: FSMContext):
     await state.set_state(CalcDate.day_selected)
 
 
-@router.callback_query(CalcDate.day_selected)
+@user_handlers_router.callback_query(CalcDate.day_selected)
 async def cb_period(call: CallbackQuery, state: FSMContext):
     await state.update_data(period=call.data)
     state_data = await state.get_data()
@@ -120,47 +116,61 @@ async def cb_period(call: CallbackQuery, state: FSMContext):
     # если вычисленная дата больше чем текущая, предложение о напоминании не выводим
     if date.today() < date_of_purchase:
         await call.message.answer("Хотите чтобы я напомнил?", reply_markup=confirm_kb())
-        await state.set_state(CalcDate.confirm)
+        await state.set_state(CalcDate.text_remind)
     else:
         await state.clear()
     await call.answer()
 
 
-# установка или отмена напоминания
-@router.callback_query(CalcDate.confirm)
-async def cb_confirm(call: CallbackQuery, bot: Bot, state: FSMContext, apscheduler: AsyncIOScheduler):
-    state_data = await state.get_data()
-    dop = state_data['date_of_purchase']
+# предложение ввода текста или отмена напоминания
+@user_handlers_router.callback_query(CalcDate.text_remind)
+async def cb_enter_text_or_cancel(call: CallbackQuery, state: FSMContext):
     if call.data == 'confirm':
-
-        id = f'date:{call.from_user.id}:{datetime.now().timestamp()}'
-        trigg_name = 'date'
-        chat_id = call.from_user.id
-        run_date = str(date(dop.year, dop.month, dop.day))
-        date_of_trip = str(date(int(state_data['year']), int(state_data['month']), int(state_data['day'])))
-
-        await add_task(id,trigg_name,chat_id,run_date, date_of_trip)
-
-        apscheduler.add_job(send_reminder, trigger=trigg_name,
-                            id=id,
-                            run_date=datetime(
-                                dop.year,
-                                dop.month,
-                                dop.day,
-                                7,
-                                50,
-                                0
-                            ),
-                            kwargs={'bot': bot, 'chat_id': chat_id,
-                                    'text': f'Вы просили напомнить о покупке билета на {date_of_trip}'})
-        logger.info(f'Задание добавлено в шедулер с id: {id}')
-        await call.message.answer(f'Вы получите напоминание: {dop}, в 07:50')
-
+        await call.message.answer('Введите текст напоминания...')
+        await call.answer()
+        await state.set_state(CalcDate.confirm)
     else:
         await call.message.answer('Чтобы начать сначала, нажмите /start в меню')
-    await call.answer()
+        await call.answer()
+        await state.clear()
+
+
+# установка напоминания
+@user_handlers_router.message(CalcDate.confirm)
+async def cb_confirm(message: Message, bot: Bot, state: FSMContext, apscheduler: AsyncIOScheduler):
+    state_data = await state.get_data()
+    dop = state_data['date_of_purchase']
+
+    id = f'{message.from_user.id}:date:{datetime.now().timestamp()}'
+    trigg_name = 'date'
+    chat_id = message.from_user.id
+    run_date = str(date(dop.year, dop.month, dop.day))
+    date_of_trip = str(date(int(state_data['year']), int(state_data['month']), int(state_data['day'])))
+    text = f'\n\nваш текст: <b>{message.text}</b>'
+    await add_task(id, trigg_name, chat_id, run_date, date_of_trip, message.text)
+
+    apscheduler.add_job(send_reminder, trigger=trigg_name,
+                        id=id,
+                        # run_date=datetime.now() + timedelta(minutes=1),
+                        run_date=datetime(
+                            dop.year,
+                            dop.month,
+                            dop.day,
+                            7,
+                            50,
+                            0
+                        ),
+                        kwargs={'bot': bot, 'chat_id': chat_id,
+                                'text': f'Вы просили напомнить о покупке билета на {date_of_trip}{text}'})
+    logger.info(f'Задание добавлено в шедулер с id: {id}')
+    await message.answer(f'Вы получите напоминание: {dop}, в 07:50')
     await state.clear()
 
 
 async def send_reminder(bot: Bot, chat_id: int, text: str) -> None:
-    await bot.send_message(chat_id, text)
+    await bot.send_message(chat_id, text, parse_mode='HTML')
+
+
+@user_handlers_router.message()
+async def msg_err(message: types.Message):
+    await message.answer('пользуйтесь меню')

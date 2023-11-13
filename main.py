@@ -6,7 +6,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler import events
 
-from bot.handlers.user_hendlers import router
+from bot.handlers.delete_handlers import delete_handlers_router
+from bot.handlers.user_hendlers import user_handlers_router
 from bot.middlewares.apschedmiddleware import SchedulerMiddleware
 from settings import settings
 from utils.commands import set_commands
@@ -50,7 +51,11 @@ async def start():
 
     dp = Dispatcher(storage=storage)
     dp.update.middleware.register(SchedulerMiddleware(scheduler))
-    dp.include_router(router)
+    dp.include_routers(
+        delete_handlers_router,
+        user_handlers_router,
+
+    )
     dp.startup.register(start_bot)
     dp.shutdown.register(stop_bot)
     logger.info('start')

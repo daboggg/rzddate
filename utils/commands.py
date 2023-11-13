@@ -8,6 +8,10 @@ async def set_commands(bot: Bot):
             command='start',
             description='Начать вычисление даты'
         ),
+        BotCommand(
+            command='delete',
+            description='Удалить напоминание'
+        ),
     ]
 
     await bot.set_my_commands(commands, BotCommandScopeDefault())

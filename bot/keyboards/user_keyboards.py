@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Any
 
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -64,6 +65,17 @@ def get_period_kb() -> InlineKeyboardMarkup:
 
 def confirm_kb() -> InlineKeyboardMarkup:
     ikb = InlineKeyboardBuilder()
-    ikb.button(text='Да',callback_data='confirm')
-    ikb.button(text='Нет',callback_data='cancel')
+    ikb.button(text='Да', callback_data='confirm')
+    ikb.button(text='Нет', callback_data='cancel')
     return ikb.adjust(2).as_markup()
+
+
+def delete_task_kb(info: list[dict[str,Any]]) -> InlineKeyboardMarkup:
+    ikb = InlineKeyboardBuilder()
+    for i in info:
+        date_to_button = str(i['date'])
+        text_to_butoon = i['text']
+        text_to_butoon = text_to_butoon[text_to_butoon.find('<b>')+3:-4]
+
+        ikb.button(text=f'{date_to_button} {text_to_butoon}', callback_data=f'deletetask_{i["job_id"]}')
+    return ikb.adjust(1).as_markup()
