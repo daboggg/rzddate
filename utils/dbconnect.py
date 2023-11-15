@@ -19,10 +19,11 @@ async def create_task_table():
 
 async def add_task(id, trigg_name, chat_id, run_date, date_of_trip, text):
     async with aiosqlite.connect('rzddate.db') as db:
-        await db.execute("INSERT INTO task_table(id, trigg_name, chat_id, run_date, date_of_trip, text) VALUES (?, ?, ?, ?, ?, ?)", (id, trigg_name,chat_id,run_date, date_of_trip, text))
+        await db.execute(
+            "INSERT INTO task_table(id, trigg_name, chat_id, run_date, date_of_trip, text) VALUES (?, ?, ?, ?, ?, ?)",
+            (id, trigg_name, chat_id, run_date, date_of_trip, text))
         await db.commit()
         logger.info(f'Доблено в бд задание с id: {id}')
-
 
 
 async def get_tasks():
@@ -32,13 +33,21 @@ async def get_tasks():
         logger.info(f'Получен список заданий из бд')
         return result_list
 
-def delete_task(id:str)->None:
+
+def get_task(id: str):
+    with sqlite3.connect('rzddate.db') as db:
+        query = f"SELECT * FROM task_table WHERE id='{id}'"
+        cur = db.execute(query)
+        logger.info(f'Получен список заданий из бд')
+        return  cur.fetchone()
+
+
+def delete_task(id: str) -> None:
     with sqlite3.connect('rzddate.db') as db:
         query = f"DELETE FROM task_table WHERE id='{id}'"
         db.execute(query)
         db.commit()
         logger.info(f'Удалено задание из бд с id {id}')
-
 
 # async def get_user_tasks(id):
 #     async with aiosqlite.connect('rzddate.db') as db:
@@ -46,4 +55,3 @@ def delete_task(id:str)->None:
 #         result_list = await db.execute_fetchall(query)
 #         logger.info(f'Получен список заданий из с id: {id}')
 #         return result_list
-

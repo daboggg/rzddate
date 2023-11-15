@@ -6,6 +6,7 @@ from aiogram.types import Message, CallbackQuery
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from bot.keyboards.user_keyboards import delete_task_kb
+from utils.dbconnect import get_task
 
 delete_handlers_router = Router()
 logger = logging.getLogger('bot.user_handlers')
@@ -17,7 +18,8 @@ async def offer_delete_task(message: Message, apscheduler: AsyncIOScheduler) -> 
     f = filter(lambda j: j.id.split(":")[0] == str(message.from_user.id), apscheduler.get_jobs())
     m = map(lambda j: {
         'job_id': j.id,
-        'date': j.trigger.run_date.date(),
+        # 'date': j.trigger.run_date.date(),
+        'date': get_task(j.id)[4],
         'text': j.kwargs['text']
     }, f)
     info = list(m)
