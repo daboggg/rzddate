@@ -9,6 +9,7 @@ from apscheduler import events
 from bot.handlers.delete_handlers import delete_handlers_router
 from bot.handlers.user_hendlers import user_handlers_router
 from bot.middlewares.apschedmiddleware import SchedulerMiddleware
+from db.orm import AsyncORM
 from settings import settings
 from utils.commands import set_commands
 from utils.dbconnect import create_task_table
@@ -32,8 +33,11 @@ async def start():
 
                         )
     logger = logging.getLogger('main')
+
     # создаю при старте бд
-    await create_task_table()
+    # await create_task_table()
+    async_orm = AsyncORM()
+    await async_orm.create_table()
 
 
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")

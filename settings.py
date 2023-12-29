@@ -7,10 +7,15 @@ class Bots:
     bot_token: str
     admin_id: int
 
+@dataclass
+class DatabaseUrls:
+    async_db_url: str
+
 
 @dataclass
 class Settings:
     bots: Bots
+    db_urls: DatabaseUrls
 
 
 def get_settings(path: str):
@@ -21,6 +26,9 @@ def get_settings(path: str):
         bots=Bots(
             bot_token=env.str('TOKEN_API'),
             admin_id=env.int('ADMIN_ID')
+        ),
+        db_urls=DatabaseUrls(
+            async_db_url=env.str('DATABASE_URL')
         )
     )
 
