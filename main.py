@@ -9,10 +9,10 @@ from apscheduler import events
 from bot.handlers.delete_handlers import delete_handlers_router
 from bot.handlers.user_hendlers import user_handlers_router
 from bot.middlewares.apschedmiddleware import SchedulerMiddleware
+from bot.middlewares.async_orm_middleware import AsyncOrmMiddleware
 from db.orm import AsyncORM
 from settings import settings
 from utils.commands import set_commands
-from utils.dbconnect import create_task_table
 from utils.delete_task_from_db import delete_task_from_db
 from utils.recovery import add_tasks_to_scheduler
 
@@ -35,9 +35,7 @@ async def start():
     logger = logging.getLogger('main')
 
     # создаю при старте бд
-    # await create_task_table()
     async_orm = AsyncORM()
-    await async_orm.create_table()
 
 
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
@@ -54,7 +52,12 @@ async def start():
     storage = MemoryStorage()
 
     dp = Dispatcher(storage=storage)
+
+    # регистрация middlewares
     dp.update.middleware.register(SchedulerMiddleware(scheduler))
+    dp.update.middleware.register(AsyncOrmMiddleware(async_orm))
+
+    # подключение роутеров
     dp.include_routers(
         delete_handlers_router,
         user_handlers_router,

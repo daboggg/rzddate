@@ -11,6 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from babel.dates import format_date
 
 from bot.keyboards.user_keyboards import get_years_kb, get_month_kb, get_day_kb, get_period_kb, confirm_kb
+from bot.middlewares.async_orm_middleware import AsyncOrmMiddleware
 from utils.dbconnect import add_task
 from utils.months import months
 
