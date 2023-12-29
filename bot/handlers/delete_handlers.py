@@ -6,7 +6,7 @@ from aiogram.types import Message, CallbackQuery
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from bot.keyboards.user_keyboards import delete_task_kb
-from utils.dbconnect import get_task
+from db.orm import AsyncORM
 
 delete_handlers_router = Router()
 logger = logging.getLogger('bot.user_handlers')
@@ -14,15 +14,16 @@ logger = logging.getLogger('bot.user_handlers')
 
 # отправляет клавиатуру для удаления заданий
 @delete_handlers_router.message(Command(commands=['delete']))
-async def offer_delete_task(message: Message, apscheduler: AsyncIOScheduler) -> None:
-    f = filter(lambda j: j.id.split(":")[0] == str(message.from_user.id), apscheduler.get_jobs())
-    m = map(lambda j: {
-        'job_id': j.id,
-        # 'date': j.trigger.run_date.date(),
-        'date': get_task(j.id)[4],
-        'text': j.kwargs['text']
-    }, f)
-    info = list(m)
+async def offer_delete_task(message: Message, apscheduler: AsyncIOScheduler, async_orm: AsyncORM) -> None:
+    result = filter(lambda j: j.id.split(":")[0] == str(message.from_user.id), apscheduler.get_jobs())
+    info = []
+    for j in result:
+        info.append({
+            'job_id': j.id,
+            # 'date': j.trigger.run_date.date(),
+            'date': (await async_orm.get_task(j.id)).date_of_trip,
+            'text': j.kwargs['text']
+        })
     if len(info):
         await message.answer('👇 Нажмите для удаления', reply_markup=delete_task_kb(info))
     else:

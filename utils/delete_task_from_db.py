@@ -1,7 +1,7 @@
 from apscheduler.events import JobEvent
 
-from utils.dbconnect import delete_task
+from db.orm import SyncORM
 
 
 def delete_task_from_db(job: JobEvent) -> None:
-    delete_task(job.job_id)
+    SyncORM.delete_task(job.job_id)

@@ -12,7 +12,8 @@ from babel.dates import format_date
 
 from bot.keyboards.user_keyboards import get_years_kb, get_month_kb, get_day_kb, get_period_kb, confirm_kb
 from bot.middlewares.async_orm_middleware import AsyncOrmMiddleware
-from utils.dbconnect import add_task
+from db.models import Task
+from db.orm import AsyncORM
 from utils.months import months
 
 user_handlers_router = Router()
@@ -163,7 +164,7 @@ async def cb_enter_text_or_cancel(call: CallbackQuery, state: FSMContext):
 
 # установка напоминания
 @user_handlers_router.message(CalcDate.confirm)
-async def cb_confirm(message: Message, bot: Bot, state: FSMContext, apscheduler: AsyncIOScheduler):
+async def cb_confirm(message: Message, bot: Bot, state: FSMContext, apscheduler: AsyncIOScheduler, async_orm: AsyncORM):
     state_data = await state.get_data()
     dop = state_data['date_of_purchase']
 
@@ -173,7 +174,12 @@ async def cb_confirm(message: Message, bot: Bot, state: FSMContext, apscheduler:
     run_date = str(date(dop.year, dop.month, dop.day))
     date_of_trip = str(date(int(state_data['year']), int(state_data['month']), int(state_data['day'])))
     text = f'\n\nваш текст: <b>{message.text}</b>'
-    await add_task(id, trigg_name, chat_id, run_date, date_of_trip, message.text)
+    await async_orm.add_task(Task(id=id,
+                                  trigg_name=trigg_name,
+                                  chat_id=chat_id,
+                                  run_date=run_date,
+                                  date_of_trip=date_of_trip,
+                                  text=message.text))
 
     apscheduler.add_job(send_reminder, trigger=trigg_name,
                         id=id,

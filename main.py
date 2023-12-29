@@ -37,7 +37,6 @@ async def start():
     # создаю при старте бд
     async_orm = AsyncORM()
 
-
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
     scheduler.start()
 
@@ -47,7 +46,7 @@ async def start():
     bot = Bot(token=settings.bots.bot_token, parse_mode='HTML')
 
     # добавляю задания в шедулер из бд (если есть)
-    await add_tasks_to_scheduler(scheduler, bot)
+    await add_tasks_to_scheduler(scheduler, bot, async_orm)
 
     storage = MemoryStorage()
 
